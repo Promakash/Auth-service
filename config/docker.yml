@@ -1,0 +1,11 @@
+address:
+  ":8000"
+postgres:
+  host: storage
+  port: 5432
+  user: postgres
+  password: password
+  db_name: postgres
+log:
+  level: debug
+  format: text
