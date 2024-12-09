@@ -1,8 +1,8 @@
 package config
 
 import (
-	"auth_service/internal/infra"
-	pkglog "auth_service/internal/log"
+	"auth_service/pkg/infra"
+	pkglog "auth_service/pkg/log"
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 	"os"
