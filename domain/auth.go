@@ -1,6 +1,7 @@
 package domain
 
 import (
+	pkgtime "auth_service/pkg/time"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -17,6 +18,6 @@ type RefreshToken = string
 type Auth struct {
 	UserID        uuid.UUID
 	RefreshHashed []byte
-	Iat           int64
-	Exp           int64
+	Iat           pkgtime.UnixTime
+	Exp           pkgtime.UnixTime
 }

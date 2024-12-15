@@ -1,32 +1,33 @@
 package http
 
 import (
+	"bytes"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
-	"time"
+	"strings"
 )
+
+const docsURI = "docs"
+const healthURI = "health"
 
 func LoggingMiddleware(logger slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-
-			scheme := "http"
-			if r.TLS != nil {
-				scheme = "https"
+			path := r.URL.Path
+			if strings.Contains(path, docsURI) || strings.Contains(path, healthURI) {
+				next.ServeHTTP(w, r)
+				return
 			}
 
-			rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+			rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK, body: &bytes.Buffer{}}
 
 			defer func() {
 				if rec := recover(); rec != nil {
 					logger.Error("Request panic",
+						"endpoint", path,
 						"method", r.Method,
-						"url", r.URL.String(),
 						"remote_addr", r.RemoteAddr,
-						"user_agent", r.UserAgent(),
-						"scheme", scheme,
 						"panic", rec,
 						"stacktrace", string(debug.Stack()),
 					)
@@ -36,15 +37,15 @@ func LoggingMiddleware(logger slog.Logger) func(http.Handler) http.Handler {
 
 			next.ServeHTTP(rw, r)
 
-			duration := time.Since(start)
+			var responseBody string
+			if rw.body.Len() > 0 {
+				responseBody = rw.body.String()
+			}
 			logger.Info("Request completed",
+				"endpoint", path,
 				"method", r.Method,
-				"url", r.URL.String(),
 				"status", rw.statusCode,
-				"duration_ms", duration.Milliseconds(),
-				"bytes_written", rw.bytesWritten,
-				"user_agent", r.UserAgent(),
-				"scheme", scheme,
+				"response_body", responseBody,
 			)
 		})
 	}
@@ -54,6 +55,7 @@ type responseWriter struct {
 	http.ResponseWriter
 	statusCode   int
 	bytesWritten int
+	body         *bytes.Buffer
 }
 
 func (rw *responseWriter) WriteHeader(statusCode int) {
@@ -62,6 +64,7 @@ func (rw *responseWriter) WriteHeader(statusCode int) {
 }
 
 func (rw *responseWriter) Write(data []byte) (int, error) {
+	rw.body.Write(data)
 	size, err := rw.ResponseWriter.Write(data)
 	rw.bytesWritten += size
 	return size, err

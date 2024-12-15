@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auth_service/config"
 	pkgConfig "auth_service/pkg/config"
 	"auth_service/service"
 	"context"
@@ -19,15 +20,19 @@ import (
 	"auth_service/repository/postgres"
 )
 
+// This is env for configs
+const serverConfigEnv = "HTTP_CONFIG_PATH"
+const apiURL = "/api/v1/auth/"
+
 // @title           Auth service API
 // @version         1.0
 // @description     REST сервис аутентификации
 // @termsOfService  http://swagger.io/terms/
 
 // @host      localhost:8080
-// @BasePath  /
+// @BasePath  /api/v1/auth/
 func main() {
-	cfg := pkgConfig.MustLoad()
+	cfg := pkgConfig.ParseAppConfig[config.HTTPConfig](serverConfigEnv)
 
 	logger := pkglog.NewLogger("debug", "json")
 	slog.SetDefault(&logger)
@@ -45,13 +50,15 @@ func main() {
 	defer func() { _ = pg.Close() }()
 
 	authRepo := postgres.NewAuthRepository(pg)
-	authService := service.NewAuth(authRepo, cfg.Secret, time.Duration(cfg.RefreshExp), time.Duration(cfg.AccessExp))
+	authService := service.NewAuth(authRepo, cfg.Jwt.Secret, time.Duration(cfg.Jwt.RefreshExp), time.Duration(cfg.Jwt.AccessExp))
+
+	mailService := infra.NewEmailSender(cfg.SMTP)
 
 	userRepo := postgres.NewUserRepository(pg)
-	userService := service.NewUser(authService, userRepo)
+	userService := service.NewUser(authService, mailService, userRepo)
 	userHandler := http.NewAuthHandler(logger, userService)
 
-	publicHandler := pkghttp.NewHandler("/",
+	publicHandler := pkghttp.NewHandler(apiURL,
 		pkghttp.WithLoggingMiddleware(logger),
 		pkghttp.WithSwagger(),
 		userHandler.WithAuthHandlers(),

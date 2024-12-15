@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"auth_service/domain"
+	pkgtime "auth_service/pkg/time"
 )
 
 type Auth interface {
@@ -10,5 +11,5 @@ type Auth interface {
 	CreateAccessToken(user *domain.User, auth *domain.Auth) (domain.AccessToken, error)
 	CreateRefreshToken(user *domain.User, auth *domain.Auth) (domain.RefreshToken, error)
 	ParseAccessToken(token domain.AccessToken) (*domain.AccessTokenClaims, error)
-	ParseRefreshToken(token domain.RefreshToken) (domain.User, int64, error)
+	ParseRefreshToken(token domain.RefreshToken) (domain.User, pkgtime.UnixTime, error)
 }

@@ -42,8 +42,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/types.GenerateResponse"
                         }
                     },
-                    "400": {
-                        "description": "Ошибка в запросе",
+                    "404": {
+                        "description": "Пользователя с данным UUID нет в системе",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
@@ -88,8 +88,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/types.RefreshResponse"
                         }
                     },
-                    "400": {
-                        "description": "Ошибка в запросе",
+                    "401": {
+                        "description": "Недействительный/просроченный токен",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
@@ -150,12 +150,14 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/",
+	BasePath:         "/api/v1/auth/",
 	Schemes:          []string{},
 	Title:            "Auth service API",
 	Description:      "REST сервис аутентификации",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

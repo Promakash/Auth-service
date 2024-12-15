@@ -9,9 +9,19 @@ postgres:
 log:
   level: debug
   format: text
-secret:
-  "super-secret-key"
-refreshExp:
-  80
-accessExp:
-  1
+jwt:
+  secret:
+    "super-secret-key"
+  refreshExp:
+    80
+  accessExp:
+    1
+smtp:
+  host:
+    "tests"
+  port:
+    "2525"
+  username:
+    "test"
+  password:
+    "test"

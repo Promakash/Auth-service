@@ -1,4 +1,4 @@
-FROM golang:1.22.3 AS build
+FROM golang:1.23-alpine AS build
 
 WORKDIR /app
 
@@ -10,7 +10,9 @@ COPY ./ ./
 
 RUN go build -o auth-app cmd/main.go
 
-FROM ubuntu:22.04 AS runner
+FROM alpine AS runner
+
+RUN apk --no-cache add curl
 
 WORKDIR /app
 

@@ -42,7 +42,7 @@ func (h *AuthHandler) WithAuthHandlers() pkghttp.RouterOption {
 // @Produce json
 // @Param uuid query string true "UUID пользователя"
 // @Success 200 {object} types.GenerateResponse
-// @Failure 400 {object} http.ErrorResponse "Ошибка в запросе"
+// @Failure 404 {object} http.ErrorResponse "Пользователя с данным UUID нет в системе"
 // @Failure 500 {object} http.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /tokens/generate [get]
 func (h *AuthHandler) generateHandler(r *http.Request) pkghttp.Response {
@@ -64,7 +64,7 @@ func (h *AuthHandler) generateHandler(r *http.Request) pkghttp.Response {
 // @Produce json
 // @Param body body types.RefreshRequest true "Тело запроса"
 // @Success 200 {object} types.RefreshResponse
-// @Failure 400 {object} http.ErrorResponse "Ошибка в запросе"
+// @Failure 401 {object} http.ErrorResponse "Недействительный/просроченный токен"
 // @Failure 500 {object} http.ErrorResponse "Внутренняя ошибка сервера"
 // @Router /tokens/refresh [post]
 func (h *AuthHandler) refreshHandler(r *http.Request) pkghttp.Response {

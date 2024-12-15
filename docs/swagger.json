@@ -8,7 +8,7 @@
         "version": "1.0"
     },
     "host": "localhost:8080",
-    "basePath": "/",
+    "basePath": "/api/v1/auth/",
     "paths": {
         "/tokens/generate": {
             "get": {
@@ -36,8 +36,8 @@
                             "$ref": "#/definitions/types.GenerateResponse"
                         }
                     },
-                    "400": {
-                        "description": "Ошибка в запросе",
+                    "404": {
+                        "description": "Пользователя с данным UUID нет в системе",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorResponse"
                         }
@@ -82,8 +82,8 @@
                             "$ref": "#/definitions/types.RefreshResponse"
                         }
                     },
-                    "400": {
-                        "description": "Ошибка в запросе",
+                    "401": {
+                        "description": "Недействительный/просроченный токен",
                         "schema": {
                             "$ref": "#/definitions/http.ErrorResponse"
                         }

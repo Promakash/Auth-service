@@ -1,8 +1,8 @@
 services:
   app:
     healthcheck:
-      test: curl --fail http://localhost:8080/health || exit 1
-      interval: 5s
+      test: curl --fail http://localhost:8080/api/v1/auth/health || exit 1
+      interval: 10s
       timeout: 30s
       retries: 3
     build:
@@ -14,7 +14,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - CONFIG_PATH=config/docker.yml
+      - HTTP_CONFIG_PATH=config/docker.yml
   storage:
     healthcheck:
       test: pg_isready -U postgres -d postgres
@@ -28,3 +28,15 @@ services:
       - ./schema/000001_init.up.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - 5432:5432
+  tests:
+    build:
+      dockerfile: ./tests/Dockerfile
+      context: ./
+    depends_on:
+       app:
+         condition: service_healthy
+    environment:
+       - HTTP_CONFIG_PATH=../config/docker.yml
+    profiles:
+      - test
+    command: ["go", "test", "-v", "./tests/"]

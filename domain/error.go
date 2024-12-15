@@ -18,6 +18,12 @@ func HandleError(err error, r any) pkghttp.Response {
 		return pkghttp.OK(r)
 	case errors.Is(err, ErrNotFound):
 		return pkghttp.NotFound(err)
+	case errors.Is(err, ErrUnauthorized):
+		return pkghttp.Unauthorized(err)
+	case errors.Is(err, ErrInvalidToken):
+		return pkghttp.Unauthorized(err)
+	case errors.Is(err, ErrMissingParameter):
+		return pkghttp.BadRequest(err)
 	default:
 		return pkghttp.Unknown(err)
 	}

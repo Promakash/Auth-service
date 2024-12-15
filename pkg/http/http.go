@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"io"
 	"net"
 	"net/http"
 )
@@ -64,6 +63,14 @@ func NotFound(err error) *ErrorResponse {
 	}
 }
 
+func Unauthorized(err error) *ErrorResponse {
+	return &ErrorResponse{
+		statusCode: http.StatusUnauthorized,
+		Message:    err.Error(),
+		err:        err,
+	}
+}
+
 func Unknown(err error) *ErrorResponse {
 	return &ErrorResponse{
 		statusCode: http.StatusInternalServerError,
@@ -102,29 +109,6 @@ func writeResponse(w http.ResponseWriter, response Response) {
 	w.WriteHeader(response.StatusCode())
 
 	_, _ = w.Write(r)
-}
-
-func ExtractPayload[T any](resp *http.Response) (T, error) {
-	var payload T
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return payload, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var errRes ErrorResponse
-		if err := json.Unmarshal(body, &errRes); err != nil {
-			return payload, err
-		}
-		return payload, errRes.err
-	}
-
-	if err := json.Unmarshal(body, &payload); err != nil {
-		return payload, err
-	}
-
-	return payload, nil
 }
 
 func ReadUserIP(r *http.Request) string {
