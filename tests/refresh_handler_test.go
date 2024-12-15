@@ -109,12 +109,12 @@ func TestGenerateHandler_SameTokenTwice(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	respRefresh2, err := sendRequest(http.MethodPost, refreshHandlerURL, req, "")
+	respRefresh, err = sendRequest(http.MethodPost, refreshHandlerURL, req, "")
 	assert.NoError(t, err, "error while sending request")
-	defer func() { _ = respRefresh2.Body.Close() }()
+	defer func() { _ = respRefresh.Body.Close() }()
 
 	expected = http.StatusUnauthorized
-	actual = respRefresh2.StatusCode
+	actual = respRefresh.StatusCode
 	assert.Equal(t, expected, actual, fmt.Sprintf("handler returned different code. expected: %d, got: %d", expected, actual))
 }
 
@@ -136,7 +136,6 @@ func TestGenerateHandler_CheckUserNotification(t *testing.T) {
 			return
 		}
 	}()
-	t.Logf("Smtp server started on adress: %s:%s", cfg.SMTP.Host, cfg.SMTP.Port)
 
 	time.Sleep(time.Second * 5)
 

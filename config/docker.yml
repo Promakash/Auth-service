@@ -1,27 +1,23 @@
-address:
-  ":8080"
-postgres:
-  host: storage
-  port: 5432
-  user: postgres
-  password: password
-  db_name: postgres
-log:
-  level: debug
-  format: text
-jwt:
-  secret:
-    "super-secret-key"
-  refreshExp:
-    80
-  accessExp:
-    1
-smtp:
-  host:
-    "tests"
-  port:
-    "2525"
-  username:
-    "test"
-  password:
-    "test"
+address: ":8080"           # Адрес, на котором будет запускаться сервис
+
+postgres:                  # Конфиг PostgreSQL:
+  host: storage            # Хост бд
+  port: 5432               # Порт бд
+  user: postgres           # Имя пользователя
+  password: password       # Пароль пользователя
+  db_name: postgres        # Имя бд
+
+log:                       # Конфиг логгера:
+  level: debug             # Уровень логирования (debug, info, warn, error)
+  format: json             # Формат логов (text, json)
+
+jwt:                       # Конфиг токенов:
+  secret: "super-secret-key" # Секрет для подписи JWT токенов
+  refreshExp: 80           # Время жизни Refresh токена (в днях)
+  accessExp: 1             # Время жизни Access токена (в днях)
+
+smtp:                      # Конфигурация SMTP
+  host: "tests"            # Хост SMTP
+  port: "2525"             # Порт SMTP
+  username: "test"         # Имя пользователя
+  password: "test"         # Пароль
