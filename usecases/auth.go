@@ -5,9 +5,10 @@ import (
 )
 
 type Auth interface {
-	CreateTokenPair(user *domain.User, auth *domain.Auth) (domain.AccessToken, domain.RefreshToken, error)
+	CreateTokenPair(user *domain.User) (domain.AccessToken, domain.RefreshToken, error)
+	RefreshTokenPair(refreshToken domain.RefreshToken, IP string) (domain.AccessToken, domain.RefreshToken, error)
 	CreateAccessToken(user *domain.User, auth *domain.Auth) (domain.AccessToken, error)
 	CreateRefreshToken(user *domain.User, auth *domain.Auth) (domain.RefreshToken, error)
 	ParseAccessToken(token domain.AccessToken) (*domain.AccessTokenClaims, error)
-	ParseRefreshToken(token domain.RefreshToken) (domain.User, error)
+	ParseRefreshToken(token domain.RefreshToken) (domain.User, int64, error)
 }

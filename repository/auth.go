@@ -7,6 +7,5 @@ import (
 
 type Auth interface {
 	GetByUUID(uuid uuid.UUID) (domain.Auth, error)
-	GetByRefreshHashed(token []byte) (domain.Auth, error)
 	Put(auth domain.Auth) error
 }

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -31,5 +32,11 @@ func WithSwagger() RouterOption {
 		r.Get("/docs/*", httpSwagger.Handler(
 			httpSwagger.URL("docs/doc.json"),
 		))
+	}
+}
+
+func WithLoggingMiddleware(logger slog.Logger) RouterOption {
+	return func(r chi.Router) {
+		r.Use(LoggingMiddleware(logger))
 	}
 }

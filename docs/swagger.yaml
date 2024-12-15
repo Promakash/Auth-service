@@ -1,0 +1,93 @@
+basePath: /
+definitions:
+  http.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  types.GenerateResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  types.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  types.RefreshResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST сервис аутентификации
+  termsOfService: http://swagger.io/terms/
+  title: Auth service API
+  version: "1.0"
+paths:
+  /tokens/generate:
+    get:
+      description: Возвращает пару Access и Refresh токенов для указанного пользователя.
+      parameters:
+      - description: UUID пользователя
+        in: query
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GenerateResponse'
+        "400":
+          description: Ошибка в запросе
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Генерация токенов
+      tags:
+      - Tokens
+  /tokens/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Обновляет пару Access и Refresh токенов на основе переданного Refresh
+        токена.
+      parameters:
+      - description: Тело запроса
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/types.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.RefreshResponse'
+        "400":
+          description: Ошибка в запросе
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Обновление токенов
+      tags:
+      - Tokens
+swagger: "2.0"

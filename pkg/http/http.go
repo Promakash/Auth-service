@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 )
 
@@ -58,6 +59,14 @@ func BadRequest(err error) *ErrorResponse {
 func NotFound(err error) *ErrorResponse {
 	return &ErrorResponse{
 		statusCode: http.StatusNotFound,
+		Message:    err.Error(),
+		err:        err,
+	}
+}
+
+func Unknown(err error) *ErrorResponse {
+	return &ErrorResponse{
+		statusCode: http.StatusInternalServerError,
 		Message:    err.Error(),
 		err:        err,
 	}
@@ -124,7 +133,8 @@ func ReadUserIP(r *http.Request) string {
 		IPAddress = r.Header.Get("X-Forwarded-For")
 	}
 	if IPAddress == "" {
-		IPAddress = r.RemoteAddr
+		IPAddress, _, _ = net.SplitHostPort(r.RemoteAddr)
 	}
+
 	return IPAddress
 }

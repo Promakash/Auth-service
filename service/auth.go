@@ -9,23 +9,24 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type Auth struct {
-	repo       repository.Auth
-	secret     string
-	refreshExp time.Duration
-	accessExp  time.Duration
+	repo            repository.Auth
+	secret          string
+	refreshTokenExp time.Duration
+	accessTokenExp  time.Duration
 }
 
 func NewAuth(repo repository.Auth, secret string, refreshExp, accessExp time.Duration) usecases.Auth {
 	return &Auth{
-		repo:       repo,
-		secret:     secret,
-		refreshExp: refreshExp,
-		accessExp:  accessExp,
+		repo:            repo,
+		secret:          secret,
+		refreshTokenExp: refreshExp * time.Hour * 24,
+		accessTokenExp:  accessExp * time.Hour * 24,
 	}
 }
 
@@ -33,14 +34,14 @@ func (s *Auth) CreateAccessToken(user *domain.User, auth *domain.Auth) (domain.A
 	claims := &domain.AccessTokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   user.UserID.String(),
-			IssuedAt:  jwt.NewNumericDate(auth.Iat),
-			ExpiresAt: jwt.NewNumericDate(auth.Exp),
+			IssuedAt:  jwt.NewNumericDate(time.Unix(auth.Iat, 0)),
+			ExpiresAt: jwt.NewNumericDate(time.Unix(auth.Iat, 0).Add(s.accessTokenExp)),
 		},
 		IP: user.IP,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	t, err := token.SignedString(s.secret)
+	t, err := token.SignedString([]byte(s.secret))
 	if err != nil {
 		return "", err
 	}
@@ -50,7 +51,7 @@ func (s *Auth) CreateAccessToken(user *domain.User, auth *domain.Auth) (domain.A
 func (s *Auth) ParseAccessToken(token domain.AccessToken) (*domain.AccessTokenClaims, error) {
 	claims := &domain.AccessTokenClaims{}
 
-	jwtToken, err := jwt.ParseWithClaims(string(token), claims, func(token *jwt.Token) (interface{}, error) {
+	jwtToken, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok || token.Method.Alg() != jwt.SigningMethodHS512.Alg() {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -70,9 +71,9 @@ func (s *Auth) ParseAccessToken(token domain.AccessToken) (*domain.AccessTokenCl
 }
 
 func (s *Auth) CreateRefreshToken(user *domain.User, auth *domain.Auth) (domain.RefreshToken, error) {
-	rawToken := fmt.Sprintf("%s-%s", user.UserID, user.IP)
+	rawToken := fmt.Sprintf("%s/%s/%d", user.UserID, user.IP, auth.Iat)
 	b := []byte(rawToken)
-	token := domain.RefreshToken(base64.URLEncoding.EncodeToString(b))
+	token := base64.URLEncoding.EncodeToString(b)
 	hashedToken, err := bcrypt.GenerateFromPassword(b, bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
@@ -82,37 +83,117 @@ func (s *Auth) CreateRefreshToken(user *domain.User, auth *domain.Auth) (domain.
 	return token, nil
 }
 
-func (s *Auth) ParseRefreshToken(token domain.RefreshToken) (domain.User, error) {
+func (s *Auth) ParseRefreshToken(token domain.RefreshToken) (domain.User, int64, error) {
+	const rTokenParts = 3
 	var user domain.User
+	var err error
 
-	b, err := base64.URLEncoding.DecodeString(token)
+	decodedToken, err := base64.URLEncoding.DecodeString(token)
 	if err != nil {
-		return user, domain.ErrInvalidToken
+		return user, 0, err
 	}
 
-	tokenStr := domain.RefreshToken(b)
-	idx := strings.LastIndex(tokenStr, "-")
-	user.IP = tokenStr[idx+1:]
-	user.UserID = uuid.UUID(b[:idx])
-	return user, nil
+	parts := strings.Split(domain.RefreshToken(decodedToken), "/")
+	if len(parts) != rTokenParts {
+		return user, 0, domain.ErrInvalidToken
+	}
+
+	user.UserID, err = uuid.Parse(parts[0])
+	if err != nil {
+		return user, 0, domain.ErrInvalidToken
+	}
+
+	user.IP = parts[1]
+
+	lastUpdate, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		return user, 0, domain.ErrInvalidToken
+	}
+	return user, lastUpdate, nil
 }
 
-func (s *Auth) CreateTokenPair(user *domain.User, auth *domain.Auth) (domain.AccessToken, domain.RefreshToken, error) {
-	aToken, err := s.CreateAccessToken(user, auth)
+func (s *Auth) CreateTokenPair(user *domain.User) (domain.AccessToken, domain.RefreshToken, error) {
+	auth := domain.Auth{
+		UserID: user.UserID,
+	}
+	s.setRefreshTokenTimestamps(&auth)
+
+	aToken, err := s.CreateAccessToken(user, &auth)
 	if err != nil {
 		return "", "", err
 	}
 
-	rToken, err := s.CreateRefreshToken(user, auth)
+	rToken, err := s.CreateRefreshToken(user, &auth)
 	if err != nil {
 		return "", "", err
 	}
 
-	auth.LastUpdate = auth.Iat
-	err = s.repo.Put(*auth)
+	err = s.repo.Put(auth)
 	if err != nil {
 		return "", "", err
 	}
 
 	return aToken, rToken, nil
+}
+
+func (s *Auth) RefreshTokenPair(refreshToken domain.RefreshToken, IP string) (domain.AccessToken, domain.RefreshToken, error) {
+	userData, iat, err := s.ParseRefreshToken(refreshToken)
+	if err != nil {
+		return "", "", err
+	}
+	userData.IP = IP
+
+	auth, err := s.repo.GetByUUID(userData.UserID)
+	if err != nil {
+		return "", "", err
+	}
+
+	verified, err := s.verifyToken(refreshToken, iat, &auth)
+	if err != nil || verified == false {
+		fmt.Printf("Tokens hash is different")
+		return "", "", err
+	}
+
+	s.setRefreshTokenTimestamps(&auth)
+
+	aToken, err := s.CreateAccessToken(&userData, &auth)
+	if err != nil {
+		return "", "", err
+	}
+
+	rToken, err := s.CreateRefreshToken(&userData, &auth)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = s.repo.Put(auth)
+	if err != nil {
+		return "", "", err
+	}
+
+	return aToken, rToken, nil
+}
+
+func (s *Auth) verifyToken(refreshToken domain.RefreshToken, iat int64, auth *domain.Auth) (bool, error) {
+	if iat != auth.Iat {
+		return false, domain.ErrUnauthorized
+	}
+
+	decodedToken, err := base64.URLEncoding.DecodeString(refreshToken)
+	if err != nil {
+		return false, err
+	}
+
+	err = bcrypt.CompareHashAndPassword(auth.RefreshHashed, decodedToken)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (s *Auth) setRefreshTokenTimestamps(auth *domain.Auth) {
+	timestamp := time.Now()
+	auth.Iat = timestamp.Unix()
+	auth.Exp = timestamp.Add(s.refreshTokenExp).Unix()
 }

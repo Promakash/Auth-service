@@ -6,22 +6,14 @@ import (
 )
 
 type Config struct {
-	level  string `yaml:"level"`
-	format string `yaml:"format"`
+	Level  string `yaml:"level"`
+	Format string `yaml:"format"`
 }
 
-func NewLogger(level string, format string) *slog.Logger {
+func NewLogger(level string, format string) slog.Logger {
 	var handler slog.Handler
 
-	switch format {
-	case "text":
-		handler = slog.NewTextHandler(os.Stdout, nil)
-	default:
-		handler = slog.NewJSONHandler(os.Stdout, nil)
-	}
-
 	var logLevel slog.Level
-
 	switch level {
 	case "debug":
 		logLevel = slog.LevelDebug
@@ -35,5 +27,12 @@ func NewLogger(level string, format string) *slog.Logger {
 		logLevel = slog.LevelInfo
 	}
 
-	return slog.New(handler).With(logLevel)
+	switch format {
+	case "text":
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	default:
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	}
+
+	return *slog.New(handler)
 }

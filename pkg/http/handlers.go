@@ -37,11 +37,12 @@ func NewServer(addr string, logger *log.Logger, handler http.Handler) *http.Serv
 	}
 }
 
-func RunServer(ctx context.Context, addr string, logger *slog.Logger, handler http.Handler) error {
+func RunServer(ctx context.Context, addr string, logger slog.Logger, handler http.Handler) error {
 	errLog := slog.NewLogLogger(logger.Handler(), slog.LevelError)
 	server := NewServer(addr, errLog, handler)
 	errListen := make(chan error, 1)
 	go func() {
+		logger.Info("Starting the server...")
 		errListen <- server.ListenAndServe()
 	}()
 	select {

@@ -1,5 +1,5 @@
 address:
-  ":8000"
+  ":8080"
 postgres:
   host: storage
   port: 5432
@@ -9,3 +9,9 @@ postgres:
 log:
   level: debug
   format: text
+secret:
+  "super-secret-key"
+refreshExp:
+  80
+accessExp:
+  1

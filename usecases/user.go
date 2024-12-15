@@ -6,6 +6,7 @@ import (
 )
 
 type User interface {
-	GetByUUID(uuid uuid.UUID) (domain.User, error)
-	NotifyUser(user domain.User) error
+	GenTokens(uuid uuid.UUID, IP string) (domain.AccessToken, domain.RefreshToken, error)
+	RefreshTokens(token domain.RefreshToken, IP string) (domain.AccessToken, domain.RefreshToken, error)
+	NotifyUser(uuid uuid.UUID) error
 }

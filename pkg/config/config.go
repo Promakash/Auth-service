@@ -9,9 +9,12 @@ import (
 )
 
 type HTTPConfig struct {
-	Address string               `yaml:"address"`
-	PG      infra.PostgresConfig `yaml:"postgres"`
-	Log     pkglog.Config        `yaml:"log"`
+	Address    string               `yaml:"address"`
+	PG         infra.PostgresConfig `yaml:"postgres"`
+	Log        pkglog.Config        `yaml:"log"`
+	Secret     string               `yaml:"secret"`
+	RefreshExp int                  `yaml:"refreshExp"`
+	AccessExp  int                  `yaml:"accessExp"`
 }
 
 func MustLoad() *HTTPConfig {

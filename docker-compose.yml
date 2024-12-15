@@ -1,0 +1,30 @@
+services:
+  app:
+    healthcheck:
+      test: curl --fail http://localhost:8080/health || exit 1
+      interval: 5s
+      timeout: 30s
+      retries: 3
+    build:
+      dockerfile: ./Dockerfile
+      context: ./
+    depends_on:
+      storage:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      - CONFIG_PATH=config/docker.yml
+  storage:
+    healthcheck:
+      test: pg_isready -U postgres -d postgres
+    image: postgres:15.4
+    container_name: storage
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ./schema/000001_init.up.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - 5432:5432
