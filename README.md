@@ -1,4 +1,4 @@
-# test-task-backend
+# Auth service
 
 **Используемые технологии:**
 
